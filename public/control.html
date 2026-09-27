@@ -108,7 +108,15 @@
           <label>Font <select data-cfg="theme.font"><option>Inter</option><option>Montserrat</option><option>Poppins</option><option>Source Serif 4</option></select></label>
           <label>Scripture font <select data-cfg="theme.scriptureFont"><option>Source Serif 4</option><option>Inter</option><option>Montserrat</option><option>Poppins</option></select></label>
           <label>Text size <input type="range" min="0.7" max="1.4" step="0.05" data-cfg="theme.textScale" data-num></label>
-          <label>Background <select data-cfg="theme.background"><option value="transparent">Transparent (browser source / key)</option><option value="black">Black</option><option value="green">Chroma green</option><option value="blue">Chroma blue</option></select></label>
+          <label>Background <select data-cfg="theme.background"><option value="transparent">Transparent (browser source / key)</option><option value="black">Black</option><option value="chroma">Chroma key</option></select></label>
+          <div class="wide chroma-row">
+            <label>Chroma key colour <input type="color" data-cfg="theme.chromaColor" id="chromaColor"></label>
+            <div class="chips small" id="chromaPresets">
+              <button type="button" class="chip" data-chroma="#00b140">Green</button>
+              <button type="button" class="chip" data-chroma="#0047bb">Blue</button>
+              <button type="button" class="chip" data-chroma="#ff00ff">Magenta</button>
+            </div>
+          </div>
           <label>Lyric style <select data-cfg="theme.lyricStyle"><option value="scrim">Soft scrim</option><option value="panel">Glass panel</option><option value="plain">Plain text</option></select></label>
           <label class="check"><input type="checkbox" data-cfg="theme.uppercaseLyrics"> Uppercase lyrics</label>
           <label class="check"><input type="checkbox" data-cfg="theme.showNextLine"> Show next line (confidence)</label>

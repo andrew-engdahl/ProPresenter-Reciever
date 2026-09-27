@@ -76,7 +76,7 @@ Default Look → layout rules (first match wins; change them in the control pane
 |---|---|
 | `/display` | Uses the background from Settings (transparent by default) |
 | `/display?bg=transparent` | OBS/vMix browser source, or an alpha key |
-| `/display?bg=green` / `?bg=blue` | Chroma key into a hardware switcher |
+| `/display?bg=chroma` | Chroma key into a hardware switcher, using the colour set in Appearance (`&chroma=ff00ff` overrides it; `?bg=green` / `?bg=blue` still work) |
 | `/display?layout=fullscreen&bg=black` | Always full screen, whatever the Look |
 | `/display?layout=lower-third&media=0` | Stream graphics without media |
 | `?speaker=0`, `?messages=0`, `?debug=1`, `?hint=0` | Turn off speaker titles, messages or the full-screen hint, or show a status badge |

@@ -109,6 +109,8 @@ textarea { resize: vertical; font-family: ui-monospace, 'SF Mono', Menlo, monosp
 
 .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .settings .wide { grid-column: 1 / -1; }
+.chroma-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+.chroma-row .chips { padding-bottom: 4px; }
 .settings .check, label.check { flex-direction: row; align-items: center; gap: 8px; grid-column: 1 / -1; font-weight: 500; color: var(--text); font-size: 13px; }
 .check input { width: 16px; height: 16px; accent-color: var(--accent); }
 .map-row { display: grid; grid-template-columns: 1fr 180px; gap: 10px; align-items: center; }

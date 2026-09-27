@@ -28,6 +28,7 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 body.bg-black { background: #000; }
+body.bg-chroma { background: var(--chroma, #00b140); }
 body.bg-green { background: #00b140; }
 body.bg-blue  { background: #0047bb; }
 

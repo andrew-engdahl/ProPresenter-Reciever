@@ -1,7 +1,8 @@
 // Display output: renders server state onto a 1920×1080 stage.
 //
 // URL options (handy for several outputs from one server):
-//   ?bg=transparent|black|green|blue   background (default from settings)
+//   ?bg=transparent|black|chroma|green|blue   background (default from settings)
+//   ?chroma=ff00ff  chroma key colour for this output (hex, no #)
 //   ?layout=lower-third|fullscreen|scripture-focus|clean   ignore the Look and force a layout
 //   ?media=0        never show media        ?speaker=0   never show speaker titles
 //   ?messages=0     never show messages     ?debug=1     connection badge
@@ -73,6 +74,8 @@
     if (t.font) root.setProperty('--font', `'${t.font}', 'Segoe UI', 'Helvetica Neue', 'Noto Sans', 'DejaVu Sans', Arial, sans-serif`);
     if (t.scriptureFont) root.setProperty('--scripture-font', `'${t.scriptureFont}', Georgia, 'Noto Serif', 'DejaVu Serif', serif`);
     root.setProperty('--scale', t.textScale || 1);
+    const chroma = /^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(q.get('chroma') || '') ? `#${q.get('chroma')}` : t.chromaColor;
+    root.setProperty('--chroma', chroma || '#00b140');
     const bg = q.get('bg') || t.background || 'transparent';
     const b = document.body.classList;
     [...b].filter(x => /^(bg|lyric|speaker)-/.test(x) || x === 'uppercase').forEach(x => b.remove(x));

@@ -175,6 +175,14 @@
     });
   }
 
+  // Chroma presets: set the colour and switch the background to chroma in one go.
+  $('#chromaPresets').addEventListener('click', e => {
+    const b = e.target.closest('[data-chroma]');
+    if (!b) return;
+    $('#chromaColor').value = b.dataset.chroma;
+    act('PUT', '/api/config', { theme: { chromaColor: b.dataset.chroma, background: 'chroma' } }, `Chroma key: ${b.textContent}`);
+  });
+
   // Look → layout: exact-name rules sit in front of the keyword rules.
   const exactRule = name => `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
   function layoutFor(name) {
@@ -205,7 +213,7 @@
     const outs = [
       ['Main output', '/display'],
       ['Key / browser source', '/display?bg=transparent'],
-      ['Chroma green', '/display?bg=green'],
+      ['Chroma key', '/display?bg=chroma'],
       ['Lower thirds only', '/display?layout=lower-third&media=0'],
       ['Room screen', '/display?layout=fullscreen&bg=black'],
       ['Debug', '/display?bg=black&debug=1'],

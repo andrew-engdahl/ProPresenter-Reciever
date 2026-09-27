@@ -44,7 +44,8 @@ const DEFAULTS = {
     font: 'Inter',
     scriptureFont: 'Source Serif 4',
     textScale: 1,
-    background: 'transparent', // transparent | black | green | blue
+    background: 'transparent', // transparent | black | chroma
+    chromaColor: '#00b140', // used when background is 'chroma'
     lyricStyle: 'scrim', // scrim | panel | plain
     uppercaseLyrics: false,
     showNextLine: false,
@@ -66,6 +67,11 @@ let current = DEFAULTS;
 
 function load() {
   try { current = merge(DEFAULTS, JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch { current = merge(DEFAULTS, {}); }
+  // Older configs stored the chroma colour as the background name.
+  const PRESETS = { green: '#00b140', blue: '#0047bb' };
+  if (PRESETS[current.theme.background]) {
+    current.theme = { ...current.theme, chromaColor: PRESETS[current.theme.background], background: 'chroma' };
+  }
   return current;
 }
 
