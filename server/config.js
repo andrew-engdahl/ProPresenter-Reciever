@@ -14,6 +14,7 @@ const DEFAULTS = {
   manualHosts: [], // [{ host, port }] always probed during discovery
   scanPorts: [50679, 50001, 50000, 1025, 20652, 49152, 57131, 60157, 4031],
   scanSubnets: true,
+  controlProPresenter: true, // false = watch only; never send triggers/clears back to ProPresenter
 
   // Looks → layouts. First matching rule wins; `layout` is one of
   // lower-third | fullscreen | scripture-focus | clean

@@ -82,7 +82,8 @@
     const looks = [...(state.looks || [])];
     $('#looks').innerHTML = looks.length ? looks.map(lk => `<button class="chip ${state.look && state.look.name === lk.name ? 'on' : ''}" data-look="${esc(lk.uuid)}">${esc(lk.name)}</button>`).join('') : '<p class="empty">No looks.</p>';
   }
-  $('#looks').addEventListener('click', e => { const b = e.target.closest('[data-look]'); if (b) act('POST', '/api/pp/look', { uuid: b.dataset.look }); });
+  const canControl = () => config.controlProPresenter !== false;
+  $('#looks').addEventListener('click', e => { const b = e.target.closest('[data-look]'); if (b && canControl()) act('POST', '/api/pp/look', { uuid: b.dataset.look }); });
   $$('[data-pp]').forEach(b => (b.onclick = () => act('POST', `/api/pp/${b.dataset.pp}`)));
   $$('[data-clear]').forEach(b => (b.onclick = () => act('POST', '/api/pp/clear', { layer: b.dataset.clear })));
 
@@ -122,7 +123,7 @@
     const t = e.target.closest('[data-toggle]');
     if (t) { const id = t.dataset.toggle; expanded.has(id) ? expanded.delete(id) : expanded.add(id); plSig = ''; return renderPlaylist(); }
     const c = e.target.closest('[data-cue]');
-    if (c) { const [presentation, index] = c.dataset.cue.split(':'); act('POST', '/api/pp/cue', { presentation, index: +index }); }
+    if (c && canControl()) { const [presentation, index] = c.dataset.cue.split(':'); act('POST', '/api/pp/cue', { presentation, index: +index }); }
   });
 
   // ---- speaker ----------------------------------------------------------------------------
@@ -161,6 +162,10 @@
       else el.value = v ?? '';
     }
     $('#speakerForm').hold.placeholder = config.speakerHoldSeconds;
+    // Watch-only: nothing here may trigger or clear anything in ProPresenter.
+    const canControl = config.controlProPresenter !== false;
+    document.body.classList.toggle('watch-only', !canControl);
+    for (const b of $$('[data-pp], [data-clear]')) { b.disabled = !canControl; b.title = canControl ? '' : 'Control of ProPresenter is off (Settings → Discovery)'; }
   }
   for (const el of $$('[data-cfg]')) {
     el.addEventListener('change', () => {

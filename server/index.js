@@ -112,6 +112,10 @@ function serveStatic(res, file) {
 }
 
 const needPP = res => { if (!pp) { json(res, 409, { error: 'Not connected to ProPresenter' }); return false; } return true; };
+const needControl = res => {
+  if (!config.get().controlProPresenter) { json(res, 403, { error: 'Control of ProPresenter is turned off in Settings' }); return false; }
+  return needPP(res);
+};
 
 const routes = {
   'GET /api/state': (req, res) => json(res, 200, { state, config: config.get(), discovery: discoveryState() }),
@@ -137,12 +141,12 @@ const routes = {
   'POST /api/disconnect': (req, res) => { disconnect(); json(res, 200, { ok: true }); },
   'POST /api/speaker': async (req, res) => { showSpeaker({ ...(await readBody(req)), source: 'manual' }); json(res, 200, speaker); },
   'POST /api/speaker/hide': (req, res) => { broadcast('speaker-hide', {}); json(res, 200, { ok: true }); },
-  'POST /api/pp/look': async (req, res) => { if (!needPP(res)) return; await pp.triggerLook((await readBody(req)).uuid); json(res, 200, { ok: true }); },
-  'POST /api/pp/playlist': async (req, res) => { if (!needPP(res)) return; const b = await readBody(req); await pp.triggerPlaylistItem(b.playlist, b.index); json(res, 200, { ok: true }); },
-  'POST /api/pp/cue': async (req, res) => { if (!needPP(res)) return; const b = await readBody(req); await pp.triggerCue(b.presentation, b.index); json(res, 200, { ok: true }); },
-  'POST /api/pp/next': async (req, res) => { if (!needPP(res)) return; await pp.next(); json(res, 200, { ok: true }); },
-  'POST /api/pp/previous': async (req, res) => { if (!needPP(res)) return; await pp.previous(); json(res, 200, { ok: true }); },
-  'POST /api/pp/clear': async (req, res) => { if (!needPP(res)) return; await pp.clear((await readBody(req)).layer || 'slide'); json(res, 200, { ok: true }); },
+  'POST /api/pp/look': async (req, res) => { if (!needControl(res)) return; await pp.triggerLook((await readBody(req)).uuid); json(res, 200, { ok: true }); },
+  'POST /api/pp/playlist': async (req, res) => { if (!needControl(res)) return; const b = await readBody(req); await pp.triggerPlaylistItem(b.playlist, b.index); json(res, 200, { ok: true }); },
+  'POST /api/pp/cue': async (req, res) => { if (!needControl(res)) return; const b = await readBody(req); await pp.triggerCue(b.presentation, b.index); json(res, 200, { ok: true }); },
+  'POST /api/pp/next': async (req, res) => { if (!needControl(res)) return; await pp.next(); json(res, 200, { ok: true }); },
+  'POST /api/pp/previous': async (req, res) => { if (!needControl(res)) return; await pp.previous(); json(res, 200, { ok: true }); },
+  'POST /api/pp/clear': async (req, res) => { if (!needControl(res)) return; await pp.clear((await readBody(req)).layer || 'slide'); json(res, 200, { ok: true }); },
 };
 
 const server = http.createServer(async (req, res) => {

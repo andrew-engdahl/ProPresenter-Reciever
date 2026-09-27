@@ -125,3 +125,6 @@ textarea { resize: vertical; font-family: ui-monospace, 'SF Mono', Menlo, monosp
 #toast { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 20px); background: #1f2533; border: 1px solid var(--line); padding: 10px 16px; border-radius: 10px; opacity: 0; transition: 0.25s; pointer-events: none; font-weight: 500; }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
 #toast.bad { border-color: var(--bad); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.watch-only #looks .chip, .watch-only .slide { cursor: default; }
+.watch-only #looks .chip:not(.on):hover, .watch-only .slide:not(.live):hover { border-color: var(--line); }

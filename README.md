@@ -151,6 +151,11 @@ For the on-screen output (HDMI/SDI out of the Linux box), start the kiosk browse
 
 Settings are stored in `data/config.json`, or in `$RECEIVER_DATA` when set.
 
+To keep the Receiver watch-only, turn off **Allow control of ProPresenter** (Discovery card,
+or `"controlProPresenter": false` in the config). Prev/Next, Clear, Look and slide-cue
+buttons are disabled, and the server refuses `/api/pp/*` with 403, so nothing is ever
+triggered on the ProPresenter machine.
+
 The Receiver needs to reach ProPresenter's network port (TCP). The control panel and output
 are served on port 8080 (`PORT=…` to change it).
 
