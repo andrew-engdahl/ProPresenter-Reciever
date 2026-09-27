@@ -1,0 +1,8 @@
+# Autostart the output when the desktop session starts:
+#   mkdir -p ~/.config/autostart && cp deploy/propresenter-receiver-kiosk.desktop ~/.config/autostart/
+# Edit Exec to point at where you put the app.
+[Desktop Entry]
+Type=Application
+Name=ProPresenter Receiver Output
+Exec=/opt/propresenter-receiver/deploy/kiosk.sh
+X-GNOME-Autostart-enabled=true

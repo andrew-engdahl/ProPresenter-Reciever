@@ -1,0 +1,191 @@
+# ProPresenter Receiver
+
+A browser-based graphics output that follows a live ProPresenter instance and renders
+clean, modern overlays: lyric lower-thirds, scripture, announcements, sermon points,
+animated speaker titles, messages, and the presentation's video/images, all laid out
+according to ProPresenter's current **Look**.
+
+It's a small Node.js server with no dependencies. Run it on the Linux machine (or anywhere
+else), then open the display output full screen, or add it as a browser source in
+OBS/vMix/Wirecast.
+
+```
+ProPresenter ──(network API: /v1/status/updates stream)──► Receiver server ──(SSE)──► /display  (output)
+                                                                        └──────────► /          (control panel)
+```
+
+## Quick start
+
+```bash
+# Node 18 or newer. No npm install is needed for the app itself.
+npm start            # or: node server/index.js
+```
+
+- Control panel: `http://<machine>:8080/`
+- Output: `http://<machine>:8080/display`
+
+In ProPresenter, open **Settings → Network** and enable **Network**. The Receiver scans the
+local network and connects on its own when it finds exactly one instance, or the instance
+you used last. You can also enter a host and port in the control panel. If you don't know
+the port, leave it empty and click **Deep scan** to try every port on that host.
+
+## What it does
+
+| Feature | How |
+|---|---|
+| **Follows the active playlist** | Streams `playlist/active`. When the playlist changes, every presentation in it is pre-loaded, so slides are ready before they go live. It also re-reads the playlist every 30 s. |
+| **Slide content** | Streams `status/slide` and `presentation/slide_index`, and uses the group names, labels and notes to classify each slide. |
+| **Looks → layouts** | Streams `look/current`. The Look's name picks the layout (editable in the control panel), and its layers switch text, media and messages on or off. |
+| **Speaker titles** | Animate in, hold for *N* seconds, then animate out. Three triggers: a slide in a **Speaker** group, the **Speaker Name** message, or the control panel. |
+| **Media** | Reads the file path from the presentation's `.pro` file, streams the video to the browser, and keeps it synced to ProPresenter's transport clock (within about 50 ms in testing). |
+| **Discovery** | Uses Bonjour/mDNS when available, a subnet sweep of likely ports, and a full port scan on request. Each hit is confirmed with `GET /version`. |
+
+### Content types
+
+Each slide gets a type, chosen by these rules in order (see `server/classify.js`):
+
+1. A `#tag` in the slide notes: `#lyrics` `#scripture` `#speaker` `#announcement` `#point` `#text` `#hide`
+2. The group name or slide label:
+   - `Verse`, `Chorus`, `Bridge`, `Tag`… → lyrics
+   - `Scripture` or `Reading` → scripture
+   - `Speaker` → speaker
+   - `Announcement` or `Welcome` → announcement
+   - `Sermon`, `Point` or `Title` → point
+3. Presentation metadata: CCLI info → song; a Bible reference → scripture
+4. The text itself: a trailing `John 3:16 KJV`-style line → scripture
+
+Multi-box slides keep their structure. The reference box becomes the scripture citation,
+and the first box becomes the title (announcement/point) or the name (speaker).
+
+### Layouts
+
+| Layout | Used for |
+|---|---|
+| `lower-third` | Broadcast/stream graphics. Lyrics sit on a soft scrim (or a glass panel); scripture, announcements and points use an accent-striped panel. |
+| `fullscreen` | Room screens. Large centred text, with media dimmed behind it. |
+| `scripture-focus` | A larger reading panel for scripture; other types look the same as in lower-third. |
+| `clean` | Media only; no text or messages. |
+
+Default Look → layout rules (first match wins; change them in the control panel):
+`Clean*` → clean, `*Full*` → fullscreen, `*Scripture*`/`*Focus*` → scripture-focus,
+`*Lower*` → lower-third, anything else → the default layout.
+
+### Output URL options
+
+| URL | Use |
+|---|---|
+| `/display` | Uses the background from Settings (transparent by default) |
+| `/display?bg=transparent` | OBS/vMix browser source, or an alpha key |
+| `/display?bg=green` / `?bg=blue` | Chroma key into a hardware switcher |
+| `/display?layout=fullscreen&bg=black` | Always full screen, whatever the Look |
+| `/display?layout=lower-third&media=0` | Stream graphics without media |
+| `?speaker=0`, `?messages=0`, `?debug=1` | Turn off speaker titles or messages, or show a status badge |
+
+You can run several outputs from one server at the same time.
+
+## Media (video and images)
+
+ProPresenter's API doesn't serve media files. The Receiver finds them itself:
+
+1. **Cue media**: the file path saved in the presentation's `.pro` document. The API gives
+   the document's path, and the Receiver reads it.
+2. **Media-bin items**: the playing file's name, looked up in the **Media folders**.
+3. **Fallback**: ProPresenter's slide thumbnail, a still image (can be turned off).
+
+When the Receiver runs on the same Mac as ProPresenter, this works without setup. On a
+separate Linux box, mount ProPresenter's library and media folders read-only and add
+**Path map** entries in the control panel:
+
+```bash
+sudo mount -t cifs //propresenter-mac/Media /mnt/pp/Media -o ro,guest
+sudo mount -t cifs //propresenter-mac/ProPresenter /mnt/pp/ProPresenter -o ro,guest
+```
+```
+/Users/av/Library/Application Support/RenewedVision/ProPresenter => /mnt/pp/ProPresenter
+/Users/av/Movies => /mnt/pp/Media
+```
+
+The Receiver has to read the `.pro` files to know each cue's media and whether a
+presentation is a song or a Bible passage. Without that access it still works, using the
+group names, text and thumbnails instead.
+
+Video plays muted by default (ProPresenter usually owns the audio). The browser must be
+able to decode the file: H.264/HEVC `.mp4`/`.mov` and WebM work in Chrome, but ProRes and
+some other pro codecs don't. For those, the thumbnail fallback is shown instead.
+
+## Speaker titles
+
+- **From a slide:** put name and title slides in a group named **Speaker**. Separate text
+  boxes work best (name box, title box). You can also tag any slide with `#speaker` in its
+  notes.
+- **From a message:** trigger the ProPresenter message **Speaker Name**, whose tokens are
+  `{Name}` and `{Title}`. Any message whose name matches the "Speaker message names" regex
+  in Settings works.
+- **Manually:** use the control panel. Speaker slides found in the playlist appear as
+  one-click buttons.
+
+The title moves up automatically so it never overlaps the lyrics or scripture on screen.
+Hold time and style (accent panel or minimal) are in Appearance.
+
+## Linux deployment
+
+```bash
+sudo useradd -r -m receiver
+sudo cp -r . /opt/propresenter-receiver && sudo chown -R receiver /opt/propresenter-receiver
+sudo cp deploy/propresenter-receiver.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now propresenter-receiver
+```
+
+For the on-screen output (HDMI/SDI out of the Linux box), start the kiosk browser, or copy
+`deploy/propresenter-receiver-kiosk.desktop` into `~/.config/autostart/`:
+
+```bash
+./deploy/kiosk.sh                          # /display?bg=black, full screen
+./deploy/kiosk.sh "/display?bg=green"      # any output URL
+```
+
+Settings are stored in `data/config.json`, or in `$RECEIVER_DATA` when set.
+
+The Receiver needs to reach ProPresenter's network port (TCP). The control panel and output
+are served on port 8080 (`PORT=…` to change it).
+
+## Test content (`tools/seed`)
+
+`npm run seed` writes a test library into ProPresenter (macOS paths by default). The
+lyrics and scripture are public domain.
+
+- **Songs:** Amazing Grace (with a motion loop), It Is Well With My Soul, Holy, Holy, Holy
+- **Scripture:** John 3:16-17 and Psalm 23:1-4, KJV, with separate reference boxes
+- **Speaker Intros:** three names and titles
+- **Other:** Announcements, *Sermon – Rooted* (points and a background image), and a Welcome Bumper video
+- **Messages:** **Speaker Name** (`{Name}`/`{Title}`) and **Parent Notice**
+- **Playlist:** *Sunday Service (Receiver Test)*, in sections (Pre-Service, Worship, The Word)
+
+Looks: on ProPresenter 21.4, looks created through the API don't appear until ProPresenter
+restarts. Quit ProPresenter, then run `node tools/seed/looks.js` to add **Lower Thirds**,
+**Full Screen Lyrics**, **Scripture Focus**, **Media + Lower Thirds** and **Clean Feed**.
+It backs up the Workspace config first and removes duplicate looks.
+
+`tools/seed/pro.js` is a small `.pro` writer built on the community
+[ProPresenter7-Proto](https://github.com/greyshirtguy/ProPresenter7-Proto) schema (MIT).
+
+## Project layout
+
+```
+server/
+  index.js         HTTP server, SSE, control API, auto-connect
+  propresenter.js  live connection: update stream, playlist pre-load, state builder
+  discovery.js     mDNS + subnet sweep + deep port scan
+  classify.js      slide → lyrics / scripture / speaker / announcement / point
+  pro-file.js      reads cue media + song/Bible flags from .pro files (no deps)
+  media.js         path mapping, media lookup, range-request streaming
+  config.js        settings (data/config.json)
+public/
+  display.*        the output (1920×1080 stage scaled to the window)
+  control.*        the control panel
+deploy/            systemd unit, kiosk launcher, autostart entry
+tools/seed/        test-content generator for ProPresenter
+test/              node --test unit tests (npm test)
+```
+
+Tested against ProPresenter 21.4 (API v1) on macOS 26.6.

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ProPresenter Receiver</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="control.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo"></span>ProPresenter Receiver</div>
+    <div id="conn" class="pill"><span class="dot"></span><span class="txt">Starting…</span></div>
+    <div class="spacer"></div>
+    <a class="btn ghost" href="/display" target="_blank" rel="noopener">Open output ↗</a>
+  </header>
+
+  <main class="grid">
+    <!-- left column -->
+    <section class="col">
+      <article class="card">
+        <h2>Live output</h2>
+        <div class="preview"><iframe id="preview" src="/display?bg=black" title="Output preview"></iframe></div>
+        <div class="now">
+          <div><span class="k">Look</span><span id="nowLook">—</span></div>
+          <div><span class="k">Layout</span><span id="nowLayout">—</span></div>
+          <div><span class="k">Slide</span><span id="nowKind">—</span></div>
+          <div><span class="k">Media</span><span id="nowMedia">—</span></div>
+        </div>
+        <div class="row gap">
+          <button class="btn" data-pp="previous">‹ Prev</button>
+          <button class="btn" data-pp="next">Next ›</button>
+          <div class="spacer"></div>
+          <button class="btn ghost" data-clear="slide">Clear text</button>
+          <button class="btn ghost" data-clear="media">Clear media</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Looks <small>trigger in ProPresenter · layout follows automatically</small></h2>
+        <div id="looks" class="chips"></div>
+      </article>
+
+      <article class="card">
+        <h2>Speaker title</h2>
+        <form id="speakerForm" class="stack">
+          <div class="row gap">
+            <label class="grow">Name<input name="name" required placeholder="Pastor Jordan Ellis"></label>
+            <label class="grow">Title<input name="title" placeholder="Lead Pastor"></label>
+            <label class="narrow">Hold (s)<input name="hold" type="number" min="1" max="60" step="0.5"></label>
+          </div>
+          <div class="row gap">
+            <button class="btn primary" type="submit">Show title</button>
+            <button class="btn ghost" type="button" id="speakerHide">Hide now</button>
+            <div class="spacer"></div>
+          </div>
+          <div id="speakerPicks" class="chips small"></div>
+          <p class="hint">Also plays automatically when a slide in a <b>Speaker</b> group (or with <code>#speaker</code> in its notes) goes live, or when the ProPresenter message <b>Speaker Name</b> is triggered.</p>
+        </form>
+      </article>
+
+      <article class="card">
+        <h2>Outputs</h2>
+        <div id="outputs" class="outputs"></div>
+      </article>
+    </section>
+
+    <!-- middle column -->
+    <section class="col">
+      <article class="card">
+        <h2>Active playlist <small id="plName"></small></h2>
+        <div id="playlist" class="playlist"><p class="empty">Trigger an item from a playlist in ProPresenter and it appears here.</p></div>
+      </article>
+    </section>
+
+    <!-- right column -->
+    <section class="col">
+      <article class="card">
+        <h2>ProPresenter instances</h2>
+        <div id="instances" class="instances"></div>
+        <p id="scanProgress" class="hint"></p>
+        <div class="row gap">
+          <button class="btn" id="scan">Scan network</button>
+          <div class="spacer"></div>
+        </div>
+        <form id="manual" class="row gap tight">
+          <input name="host" placeholder="Host / IP" required>
+          <input name="port" placeholder="Port" type="number" min="1" max="65535">
+          <button class="btn" type="submit" name="action" value="connect">Connect</button>
+          <button class="btn ghost" type="submit" name="action" value="deep" title="Try every port on this host">Deep scan</button>
+        </form>
+        <p class="hint">Enable <b>Settings → Network</b> in ProPresenter. Leave the port empty and use Deep scan if you don't know it.</p>
+      </article>
+
+      <article class="card">
+        <h2>Look → layout</h2>
+        <div id="lookMap" class="stack"></div>
+        <label class="row between">Default layout <select id="defaultLayout"></select></label>
+      </article>
+
+      <article class="card">
+        <h2>Appearance</h2>
+        <div class="settings">
+          <label>Accent <input type="color" data-cfg="theme.accent"></label>
+          <label>Font <select data-cfg="theme.font"><option>Inter</option><option>Montserrat</option><option>Poppins</option><option>Source Serif 4</option></select></label>
+          <label>Scripture font <select data-cfg="theme.scriptureFont"><option>Source Serif 4</option><option>Inter</option><option>Montserrat</option><option>Poppins</option></select></label>
+          <label>Text size <input type="range" min="0.7" max="1.4" step="0.05" data-cfg="theme.textScale" data-num></label>
+          <label>Background <select data-cfg="theme.background"><option value="transparent">Transparent (browser source / key)</option><option value="black">Black</option><option value="green">Chroma green</option><option value="blue">Chroma blue</option></select></label>
+          <label>Lyric style <select data-cfg="theme.lyricStyle"><option value="scrim">Soft scrim</option><option value="panel">Glass panel</option><option value="plain">Plain text</option></select></label>
+          <label class="check"><input type="checkbox" data-cfg="theme.uppercaseLyrics"> Uppercase lyrics</label>
+          <label class="check"><input type="checkbox" data-cfg="theme.showNextLine"> Show next line (confidence)</label>
+          <label>Speaker style <select data-cfg="speakerStyle"><option value="accent">Accent panel</option><option value="minimal">Minimal</option></select></label>
+          <label>Speaker hold (s) <input type="number" min="1" max="60" step="0.5" data-cfg="speakerHoldSeconds" data-num></label>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Media</h2>
+        <div class="settings">
+          <label class="check"><input type="checkbox" data-cfg="showMedia"> Show ProPresenter media (video / images)</label>
+          <label class="check"><input type="checkbox" data-cfg="mediaAudio"> Play media audio in the browser</label>
+          <label class="check"><input type="checkbox" data-cfg="thumbnailFallback"> Use slide thumbnail when the file isn't reachable</label>
+          <label class="wide">Media folders <small>one per line — searched by file name</small><textarea rows="2" data-cfg="mediaFolders" data-lines></textarea></label>
+          <label class="wide">Path map <small>one per line: <code>ProPresenter path =&gt; local path</code></small><textarea rows="2" data-cfg="mediaPathMap" data-map placeholder="/Users/av/Media => /mnt/propresenter/Media"></textarea></label>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Discovery</h2>
+        <div class="settings">
+          <label class="check"><input type="checkbox" data-cfg="autoConnect"> Connect automatically</label>
+          <label class="check"><input type="checkbox" data-cfg="scanSubnets"> Sweep local subnets</label>
+          <label class="wide">Ports to try <input data-cfg="scanPorts" data-csv></label>
+          <label class="wide">Speaker message names (regex) <input data-cfg="speakerMessageMatch"></label>
+        </div>
+      </article>
+    </section>
+  </main>
+  <div id="toast"></div>
+  <script src="control.js"></script>
+</body>
+</html>

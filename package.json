@@ -1,0 +1,14 @@
+{
+  "name": "propresenter-receiver",
+  "version": "1.0.0",
+  "description": "Browser output for ProPresenter: lower-thirds, scripture, animated speaker titles and media, driven by the live playlist and Looks.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "seed": "npm --prefix tools/seed install --silent && node tools/seed/seed.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "private": true
+}

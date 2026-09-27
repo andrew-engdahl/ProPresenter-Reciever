@@ -1,0 +1,302 @@
+/* ProPresenter Receiver — display output.
+   Everything is laid out on a fixed 1920×1080 stage that display.js scales to
+   the window, so positions are exact at any output resolution. */
+
+:root {
+  --accent: #3b82f6;
+  --font: 'Inter', 'Segoe UI', 'Helvetica Neue', 'Noto Sans', 'DejaVu Sans', Arial, sans-serif;
+  --scripture-font: 'Source Serif 4', 'Source Serif Pro', Georgia, 'Noto Serif', 'DejaVu Serif', serif;
+  --scale: 1;
+  --ink: #ffffff;
+  --ink-soft: rgb(255 255 255 / 0.78);
+  --glass: rgb(12 14 20 / 0.78);
+  --glass-edge: rgb(255 255 255 / 0.08);
+  --shadow: 0 2px 18px rgb(0 0 0 / 0.55), 0 1px 3px rgb(0 0 0 / 0.6);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --gutter: 120px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: transparent;
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body.bg-black { background: #000; }
+body.bg-green { background: #00b140; }
+body.bg-blue  { background: #0047bb; }
+
+#stage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform-origin: center center;
+  overflow: hidden;
+  color: var(--ink);
+}
+
+/* ---------- media ---------------------------------------------------------- */
+
+#media { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; background: #000; }
+#media.on { opacity: 1; }
+#media video, #media img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; opacity: 0; transition: opacity 0.5s ease;
+}
+#media video.on, #media img.on { opacity: 1; }
+body.bg-transparent #media:not(.on) { background: transparent; }
+
+/* Darkens media under full-screen text so it stays readable. */
+#dim { position: absolute; inset: 0; background: rgb(0 0 0 / 0.42); opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+.layout-fullscreen.has-media.has-text #dim { opacity: 1; }
+
+/* ---------- content cards -------------------------------------------------- */
+
+#content { position: absolute; inset: 0; }
+
+.card {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.45s var(--ease-out), transform 0.6s var(--ease-out);
+  will-change: opacity, transform;
+}
+.card.in  { opacity: 1; transform: none; }
+.card.out { opacity: 0; transition-duration: 0.3s; transition-timing-function: ease-in; }
+
+.text-fit { overflow: hidden; }
+.text-fit.nowrap .line { white-space: nowrap; }
+.line { display: block; }
+
+/* Lower third — lyrics ------------------------------------------------------ */
+
+.layout-lower-third .card.lyrics,
+.layout-scripture-focus .card.lyrics,
+.layout-lower-third .card.text,
+.layout-scripture-focus .card.text {
+  left: 0; right: 0; bottom: 0;
+  height: 400px;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0 var(--gutter) 84px;
+  transform: translateY(18px);
+}
+.card.lyrics .text-fit, .card.text .text-fit {
+  max-width: 1640px; max-height: 190px;
+  text-align: center;
+  font-weight: 700;
+  font-size: calc(58px * var(--scale));
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  text-shadow: var(--shadow);
+  text-wrap: balance;
+}
+.uppercase .card.lyrics .text-fit { text-transform: uppercase; letter-spacing: 0.02em; }
+
+/* Style: scrim — a soft full-width gradient behind the text */
+.lyric-scrim .layout-lower-third .card.lyrics::before,
+.lyric-scrim .layout-lower-third .card.text::before,
+.lyric-scrim .layout-scripture-focus .card.lyrics::before,
+.lyric-scrim .layout-scripture-focus .card.text::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.78) 0%, rgb(0 0 0 / 0.55) 38%, rgb(0 0 0 / 0) 100%);
+}
+/* Style: panel — a rounded glass bar hugging the text */
+.lyric-panel .card.lyrics .text-fit, .lyric-panel .card.text .text-fit {
+  background: var(--glass); border: 1px solid var(--glass-edge);
+  border-radius: 18px; padding: 22px 44px;
+  backdrop-filter: blur(14px);
+  text-shadow: none;
+}
+.next-line {
+  position: absolute; left: 0; right: 0; bottom: 36px;
+  text-align: center; font-size: 26px; font-weight: 500; color: var(--ink-soft);
+  opacity: 0.7;
+}
+
+/* Lower third — scripture --------------------------------------------------- */
+
+.layout-lower-third .card.scripture {
+  left: var(--gutter); right: var(--gutter); bottom: 72px;
+  transform: translateX(-28px);
+}
+.panel {
+  position: relative;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: 20px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+  overflow: hidden;
+}
+.panel::before { /* accent stripe */
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--accent);
+}
+.card.scripture .panel { padding: 34px 48px 36px 56px; }
+.card.scripture .ref {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 24px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 14px;
+  filter: brightness(1.35) saturate(1.1);
+}
+.card.scripture .ref::before { content: ''; width: 28px; height: 3px; border-radius: 2px; background: currentColor; }
+.card.scripture .text-fit {
+  font-family: var(--scripture-font);
+  font-size: calc(42px * var(--scale));
+  line-height: 1.38;
+  font-weight: 500;
+  max-height: 240px;
+}
+
+/* Lower third — announcement & sermon point --------------------------------- */
+
+.layout-lower-third .card.announcement,
+.layout-lower-third .card.point,
+.layout-scripture-focus .card.announcement,
+.layout-scripture-focus .card.point {
+  left: var(--gutter); bottom: 90px; max-width: 1180px;
+  transform: translateX(-28px);
+}
+.card.announcement .panel, .card.point .panel { padding: 30px 48px 32px 56px; }
+.card .title { font-size: calc(52px * var(--scale)); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.card .body { margin-top: 10px; font-size: calc(32px * var(--scale)); font-weight: 500; color: var(--ink-soft); line-height: 1.3; }
+.card.point .title { color: #fff; }
+.card.point .kicker, .card.announcement .kicker {
+  font-size: 20px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); filter: brightness(1.35); margin-bottom: 10px;
+}
+
+/* Scripture focus — a larger, centred reading panel -------------------------- */
+
+.layout-scripture-focus .card.scripture {
+  left: 200px; right: 200px; bottom: 90px;
+  transform: translateY(24px);
+}
+.layout-scripture-focus .card.scripture .panel { padding: 48px 72px 52px 80px; }
+.layout-scripture-focus .card.scripture .text-fit { font-size: calc(54px * var(--scale)); max-height: 420px; line-height: 1.4; }
+.layout-scripture-focus .card.scripture .ref { font-size: 28px; margin-bottom: 20px; }
+
+/* Full screen --------------------------------------------------------------- */
+
+.layout-fullscreen .card {
+  inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 120px 160px; text-align: center;
+  transform: scale(0.985);
+}
+.layout-fullscreen .card .panel { background: none; border: 0; box-shadow: none; backdrop-filter: none; padding: 0; overflow: visible; }
+.layout-fullscreen .card .panel::before { display: none; }
+.layout-fullscreen .card.lyrics .text-fit, .layout-fullscreen .card.text .text-fit {
+  font-size: calc(92px * var(--scale)); max-height: 760px; max-width: 1600px; line-height: 1.18;
+}
+.layout-fullscreen .card.scripture .text-fit { font-size: calc(68px * var(--scale)); max-height: 660px; max-width: 1560px; line-height: 1.36; }
+.layout-fullscreen .card.scripture .panel { display: flex; flex-direction: column-reverse; align-items: center; gap: 36px; }
+.layout-fullscreen .card.scripture .ref { font-size: 34px; margin: 0; }
+.layout-fullscreen .card .title { font-size: calc(110px * var(--scale)); }
+.layout-fullscreen .card .body { font-size: calc(48px * var(--scale)); margin-top: 24px; }
+.layout-fullscreen .card .kicker { font-size: 26px; margin-bottom: 22px; }
+.layout-fullscreen .card .text-fit { text-shadow: var(--shadow); }
+
+/* Clean — nothing but media */
+.layout-clean #content, .layout-clean #message { display: none; }
+
+/* ---------- speaker title ---------------------------------------------------
+   in:   bar grows → panel wipes open → name rises → title fades up
+   hold: (speakerHoldSeconds)
+   out:  text drops → panel wipes shut → bar collapses                       */
+
+#speaker {
+  position: absolute; left: var(--gutter); bottom: 150px;
+  display: flex; align-items: stretch;
+  pointer-events: none;
+  visibility: hidden;
+  transition: bottom 0.5s var(--ease-out);
+}
+#speaker.in, #speaker.out { visibility: visible; }
+
+.sp-bar {
+  width: 12px; border-radius: 3px; background: var(--accent);
+  transform: scaleY(0); transform-origin: bottom;
+  box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.sp-panel {
+  margin-left: 14px;
+  padding: 26px 54px 28px 38px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: 6px 22px 22px 6px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 30px 70px rgb(0 0 0 / 0.4);
+  clip-path: inset(0 100% 0 0 round 6px 22px 22px 6px);
+}
+.sp-name, .sp-title { overflow: hidden; }
+.sp-name span, .sp-title span { display: block; }
+.sp-name span {
+  font-size: calc(62px * var(--scale)); font-weight: 800; letter-spacing: -0.02em; line-height: 1.12;
+  transform: translateY(105%);
+}
+.sp-title span {
+  margin-top: 6px;
+  font-size: calc(30px * var(--scale)); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); filter: brightness(1.4) saturate(1.1);
+  transform: translateY(-40%); opacity: 0;
+}
+.sp-title:empty { display: none; }
+
+#speaker.in .sp-bar       { animation: sp-bar-in 0.42s var(--ease-out) forwards; }
+#speaker.in .sp-panel     { animation: sp-wipe-in 0.8s var(--ease-out) 0.18s forwards; }
+#speaker.in .sp-name span { animation: sp-rise-in 0.75s var(--ease-out) 0.42s forwards; }
+#speaker.in .sp-title span{ animation: sp-title-in 0.7s var(--ease-out) 0.66s forwards; }
+
+#speaker.out .sp-bar       { transform: scaleY(1); animation: sp-bar-out 0.35s var(--ease-in) 0.5s forwards; }
+#speaker.out .sp-panel     { clip-path: inset(0 0 0 0 round 6px 22px 22px 6px); animation: sp-wipe-out 0.5s var(--ease-in) 0.18s forwards; }
+#speaker.out .sp-name span { transform: none; animation: sp-rise-out 0.35s var(--ease-in) forwards; }
+#speaker.out .sp-title span{ transform: none; opacity: 1; animation: sp-title-out 0.3s var(--ease-in) forwards; }
+
+@keyframes sp-bar-in    { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes sp-bar-out   { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+@keyframes sp-wipe-in   { from { clip-path: inset(0 100% 0 0 round 6px 22px 22px 6px); } to { clip-path: inset(0 0 0 0 round 6px 22px 22px 6px); } }
+@keyframes sp-wipe-out  { from { clip-path: inset(0 0 0 0 round 6px 22px 22px 6px); } to { clip-path: inset(0 100% 0 0 round 6px 22px 22px 6px); } }
+@keyframes sp-rise-in   { from { transform: translateY(105%); } to { transform: none; } }
+@keyframes sp-rise-out  { from { transform: none; } to { transform: translateY(-105%); } }
+@keyframes sp-title-in  { from { transform: translateY(-40%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sp-title-out { from { transform: none; opacity: 1; } to { transform: translateY(40%); opacity: 0; } }
+
+/* Minimal speaker style: no panel, just type over a soft shadow */
+.speaker-minimal .sp-panel { background: none; border: 0; box-shadow: none; backdrop-filter: none; padding-left: 26px; }
+.speaker-minimal .sp-name span { text-shadow: var(--shadow); }
+
+/* ---------- messages ------------------------------------------------------- */
+
+#message {
+  position: absolute; top: 64px; right: 72px; max-width: 1100px;
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 30px 18px 24px;
+  background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 999px;
+  backdrop-filter: blur(14px);
+  font-size: 30px; font-weight: 600;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.35);
+  opacity: 0; transform: translateX(40px);
+  transition: opacity 0.4s var(--ease-out), transform 0.6s var(--ease-out);
+}
+#message::before {
+  content: ''; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+#message.on { opacity: 1; transform: none; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 11px color-mix(in srgb, var(--accent) 0%, transparent); } }
+
+/* ---------- debug / status ------------------------------------------------- */
+
+#status {
+  position: absolute; left: 24px; top: 20px; padding: 8px 14px; border-radius: 10px;
+  background: rgb(0 0 0 / 0.6); font: 600 18px/1.3 var(--font); color: #fff; display: none;
+}
+.debug #status { display: block; }
+#status .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; margin-right: 8px; }
+#status.connected .dot { background: #22c55e; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, #message { transition-duration: 0.01s; }
+}

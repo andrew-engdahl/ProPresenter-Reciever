@@ -1,0 +1,22 @@
+# systemd unit for the Receiver server.
+#   sudo cp deploy/propresenter-receiver.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now propresenter-receiver
+# Edit User/WorkingDirectory to match where you put the app.
+[Unit]
+Description=ProPresenter Receiver (lower-thirds output)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=receiver
+WorkingDirectory=/opt/propresenter-receiver
+ExecStart=/usr/bin/env node server/index.js
+Environment=PORT=8080
+Environment=RECEIVER_DATA=/var/lib/propresenter-receiver
+StateDirectory=propresenter-receiver
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+{
+  "name": "propresenter-receiver-seed",
+  "version": "1.0.0",
+  "description": "Seeds ProPresenter with Receiver test content (library, looks, messages, playlist)",
+  "main": "seed.js",
+  "scripts": {
+    "seed": "node seed.js",
+    "looks": "node looks.js"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "protobufjs": "^7.6.6"
+  },
+  "private": true
+}
