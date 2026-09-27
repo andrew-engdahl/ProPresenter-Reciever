@@ -58,7 +58,8 @@ function urlToPath(buf) {
   const abs = str(first(u, 1));
   if (abs) {
     if (abs.startsWith('file://')) {
-      try { return decodeURIComponent(new URL(abs).pathname); } catch { return null; }
+      // file:///C:/Media/x.mp4 has the pathname /C:/Media/x.mp4; drop the leading slash.
+      try { return decodeURIComponent(new URL(abs).pathname).replace(/^\/([A-Za-z]:)/, '$1'); } catch { return null; }
     }
     return abs.startsWith('/') || /^[A-Za-z]:[\\/]/.test(abs) ? abs : null;
   }

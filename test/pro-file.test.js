@@ -30,6 +30,11 @@ test('finds per-cue media files and their kind', () => {
   assert.equal(r.cues['CCCC-3'].media, null);
 });
 
+test('Windows file URLs become drive-letter paths', () => {
+  const r = parsePro(mediaCue('DDDD-4', '/C:/Users/av/Videos/Worship Loop.mp4'));
+  assert.deepEqual(r.cues['DDDD-4'].media, { file: 'C:/Users/av/Videos/Worship Loop.mp4', kind: 'video' });
+});
+
 test('empty CCLI block is not a song; a populated one is', () => {
   assert.equal(parsePro(field(14, Buffer.alloc(0))).isSong, false);
   assert.equal(parsePro(field(14, str(3, 'Amazing Grace'))).isSong, true);

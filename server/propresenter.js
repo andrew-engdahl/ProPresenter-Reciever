@@ -11,6 +11,7 @@ const http = require('http');
 const EventEmitter = require('events');
 const { classify } = require('./classify');
 const { readProFile } = require('./pro-file');
+const { fileName } = require('./media');
 
 const STREAMS = [
   'status/slide', 'status/layers', 'presentation/slide_index', 'presentation/current', 'look/current',
@@ -324,7 +325,7 @@ class ProPresenter extends EventEmitter {
       if (!resolved) {
         // Media from an earlier cue can still be playing; search this presentation's cues by name.
         const all = pres && pres.meta ? Object.values(pres.meta.cues).map(c => c.media).filter(Boolean) : [];
-        const byName = all.find(m => m.file.endsWith('/' + tr.name));
+        const byName = all.find(m => fileName(m.file) === tr.name);
         resolved = byName ? this.media.resolveFile(byName.file, byName.kind) : this.media.resolveName(tr.name);
       }
       media = { name: tr.name, playing: !!tr.is_playing, duration: tr.duration || 0, uuid: tr.uuid, audioOnly: !!tr.audio_only, ...(resolved || {}) };

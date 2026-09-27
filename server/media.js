@@ -16,6 +16,12 @@ const TYPES = {
   '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.mkv': 'video/x-matroska',
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp',
 };
+// The last path segment, whichever separator the path uses. ProPresenter on Windows
+// stores C:\... paths, which path.basename can't split on macOS/Linux.
+const fileName = p => String(p).split(/[\\/]/).pop();
+// Windows paths compare case-insensitively and with either separator.
+const norm = p => (/^[A-Za-z]:[\\/]/.test(p) ? p.replace(/\\/g, '/').toLowerCase() : p.replace(/\\/g, '/'));
+
 const HOME_DIRS = { '~home': '', '~Documents': 'Documents', '~Downloads': 'Downloads', '~Music': 'Music', '~Pictures': 'Pictures', '~Movies': 'Movies', '~Desktop': 'Desktop', '~': '' };
 
 class MediaResolver {
@@ -37,7 +43,7 @@ class MediaResolver {
     const m = /^(~[A-Za-z]*)\/(.*)$/.exec(p);
     if (m) p = path.join(os.homedir(), HOME_DIRS[m[1]] ?? '', m[2]);
     for (const { from, to } of this.getConfig().mediaPathMap || []) {
-      if (from && p.startsWith(from)) return path.join(to, p.slice(from.length));
+      if (from && norm(p).startsWith(norm(from))) return path.join(to, ...p.slice(from.length).split(/[\\/]/));
     }
     return p;
   }
@@ -55,7 +61,7 @@ class MediaResolver {
     const mapped = this.mapPath(file);
     if (mapped && fs.existsSync(mapped)) return { url: `/media/${this.register(mapped)}`, kind, name: path.basename(mapped) };
     // The path may differ on this machine; fall back to a name lookup.
-    return file ? this.resolveName(path.basename(file), kind) : null;
+    return file ? this.resolveName(fileName(file), kind) : null;
   }
 
   resolveName(name, kind) {
@@ -111,4 +117,4 @@ class MediaResolver {
   }
 }
 
-module.exports = { MediaResolver };
+module.exports = { MediaResolver, fileName };
