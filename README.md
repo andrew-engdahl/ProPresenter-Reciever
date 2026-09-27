@@ -161,40 +161,117 @@ are served on port 8080 (`PORT=…` to change it).
 
 ## Windows 11 deployment
 
-1. Install Node.js 18 or newer: `winget install OpenJS.NodeJS.LTS`, then open a new window.
-2. Copy the app somewhere you can write to, such as `C:\ProPresenterReceiver`. Under
-   Program Files, settings can't be saved unless you pass `-DataDir`.
-3. Double-click `deploy\windows\install.cmd` and approve the admin prompt. It:
-   - adds a firewall rule allowing Node on Private and Domain networks, so other machines
-     can reach port 8080 and discovery replies get through;
-   - registers a scheduled task, **ProPresenter Receiver**, that starts the server hidden
-     at logon and restarts it if it exits;
-   - starts the server and prints the control-panel address.
+### 1. Install Node.js
 
-   Options (run from a command prompt):
+Open **PowerShell** (Start → type *PowerShell*) and run:
 
-   ```bat
-   deploy\windows\install.cmd -Kiosk                         :: also open /display?bg=black full screen at logon
-   deploy\windows\install.cmd -Kiosk -Monitor 2              :: ...on the second display
-   deploy\windows\install.cmd -Kiosk -KioskPath "/display?bg=chroma" -Port 9090
-   deploy\windows\install.cmd -DataDir C:\ProgramData\ProPresenterReceiver
-   ```
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
 
-Run the installer again to change options; `deploy\windows\uninstall.cmd` removes the tasks
-and firewall rule (settings stay). To run the server by hand in a window, use
-`deploy\windows\start.cmd`. To open the output once, use `deploy\windows\kiosk.cmd`
-(`-Path`, `-Monitor` and `-Port` work as above). The kiosk uses Chrome when it's installed,
-otherwise Edge.
+Close PowerShell and open a new window, then check that `node -v` prints `v18` or newer.
+Or download the LTS installer from [nodejs.org](https://nodejs.org) and run it with the
+default options.
 
-The task runs as the logged-in user, so set Windows to sign in automatically on a
-dedicated output PC. The server log is `data\receiver.log`.
+### 2. Copy the app to the PC
 
-For media from a Mac running ProPresenter, share its library and media folders, map them
-as drives, and add **Path map** entries such as `/Users/av/Movies => M:\`. When
-ProPresenter runs on the same Windows PC, `Documents\ProPresenter` is searched
-automatically. Add other media locations under **Media folders**. Path-map entries for
-Windows paths (`C:\Users\av\Videos => /mnt/pp/Media`) ignore case and accept either
-slash.
+Copy the whole app folder (USB stick, network share, OneDrive or a zip) to a folder you can
+write to. `C:\ProPresenterReceiver` works well. The folder must contain `server`,
+`public`, `deploy` and `package.json`. The `.git` folder and any `data` folder can be left
+out.
+
+Don't put it under `C:\Program Files`; settings can't be saved there (unless you use
+`-DataDir`, below). You don't need to run `npm install`.
+
+If you copied a zip, right-click it → **Properties** → tick **Unblock** before extracting,
+or Windows may refuse to run the scripts.
+
+### 3. Run the installer
+
+Open `C:\ProPresenterReceiver\deploy\windows` and double-click **`install.cmd`**. Click
+**Yes** at the admin prompt. The installer:
+
+- adds a firewall rule allowing Node on Private and Domain networks, so other machines can
+  open port 8080 and ProPresenter discovery replies get through;
+- registers a scheduled task, **ProPresenter Receiver**, that starts the server hidden
+  whenever you log on and restarts it if it stops;
+- starts the server now and prints the control-panel address.
+
+To also open the output full screen at logon, run the installer from a command prompt with
+options instead:
+
+```bat
+cd C:\ProPresenterReceiver
+deploy\windows\install.cmd -Kiosk                         :: open /display?bg=black full screen at logon
+deploy\windows\install.cmd -Kiosk -Monitor 2              :: ...on the second display
+deploy\windows\install.cmd -Kiosk -KioskPath "/display?bg=chroma" -Port 9090
+deploy\windows\install.cmd -DataDir C:\ProgramData\ProPresenterReceiver
+```
+
+`-Monitor` counts from 1 (the primary display), then left to right. Run the installer again
+at any time to change options.
+
+### 4. Connect to ProPresenter
+
+1. On the ProPresenter computer, open **Settings → Network** and turn on **Network**.
+2. Open the control panel at `http://localhost:8080/`. The Receiver finds ProPresenter on
+   its own. If it doesn't, type ProPresenter's IP address and port on the Discovery card,
+   or enter just the IP and click **Deep scan**.
+3. Make sure Windows treats the network as **Private** (Settings → Network & internet →
+   your connection → *Private network*). On a *Public* network the firewall rule doesn't
+   apply.
+
+### 5. Show the output
+
+- **On this PC's screen or projector:** use the `-Kiosk` option above, or double-click
+  `deploy\windows\kiosk.cmd` to open it once. It uses Chrome if it's installed, otherwise
+  Edge. Press **Alt+F4** to close it.
+- **In OBS, vMix or Wirecast:** add a browser source with
+  `http://<this-pc>:8080/display?bg=transparent`, at 1920×1080.
+- **From another computer:** open `http://<this-pc>:8080/` (control panel) or `/display`.
+  The installer prints this PC's address.
+
+### Dedicated output PCs
+
+The server runs as the logged-in user, so it only starts once someone signs in. On a PC
+that should come up on its own after a power cut, set Windows to sign in automatically,
+and turn off sleep (Settings → System → Power).
+
+### Media
+
+- **ProPresenter on the same PC:** `Documents\ProPresenter` is searched automatically. Add
+  any other folders with your videos and images under **Media folders** in the control
+  panel. If OneDrive backs up your Documents folder, add ProPresenter's folder inside
+  OneDrive there too.
+- **ProPresenter on a Mac:** share the Mac's ProPresenter library and media folders over
+  SMB, map them as drives in File Explorer (This PC → **Map network drive**, e.g. `P:` and
+  `M:`), and add **Path map** entries such as `/Users/av/Movies => M:\`.
+- **ProPresenter on another Windows PC:** share its folders the same way and add entries
+  such as `C:\Users\av\Videos => M:\`. Windows path-map entries ignore case and accept
+  either slash.
+
+### Updating, stopping and removing
+
+- **Update:** copy the new files over the old folder (keep `data\`, which holds your
+  settings), then run `install.cmd` again, or sign out and back in.
+- **Stop or start:** open **Task Scheduler**, find **ProPresenter Receiver**, and choose
+  **End** or **Run**.
+- **Run by hand:** `deploy\windows\start.cmd` runs the server in a window, showing its
+  output. Stop the scheduled task first so the port is free.
+- **Remove:** double-click `deploy\windows\uninstall.cmd`. It removes the tasks and the
+  firewall rule and stops the server. The app folder and settings stay until you delete
+  them.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `node` is not recognized | Open a new window after installing Node.js, or reinstall it with the default options. |
+| The installer window flashes and closes | Run `install.cmd` from a command prompt to see the error. |
+| "running scripts is disabled" | Use the `.cmd` files rather than the `.ps1` files, and unblock the zip (step 2). |
+| Control panel won't open from another computer | Set the network to Private, and check that the firewall rule **ProPresenter Receiver** exists. |
+| ProPresenter isn't found | Check that Network is on in ProPresenter, then enter its IP and port by hand. |
+| Something else | Check the log at `data\receiver.log` in the app folder. |
 
 ## Test content (`tools/seed`)
 
