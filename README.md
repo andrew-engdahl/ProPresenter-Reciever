@@ -5,8 +5,8 @@ clean, modern overlays: lyric lower-thirds, scripture, announcements, sermon poi
 animated speaker titles, messages, and the presentation's video/images, all laid out
 according to ProPresenter's current **Look**.
 
-It's a small Node.js server with no dependencies. Run it on the Linux machine (or anywhere
-else), then open the display output full screen, or add it as a browser source in
+It's a small Node.js server with no dependencies. Run it on a Linux or Windows machine (or
+anywhere else), then open the display output full screen, or add it as a browser source in
 OBS/vMix/Wirecast.
 
 ```
@@ -159,6 +159,43 @@ triggered on the ProPresenter machine.
 The Receiver needs to reach ProPresenter's network port (TCP). The control panel and output
 are served on port 8080 (`PORT=…` to change it).
 
+## Windows 11 deployment
+
+1. Install Node.js 18 or newer: `winget install OpenJS.NodeJS.LTS`, then open a new window.
+2. Copy the app somewhere you can write to, such as `C:\ProPresenterReceiver`. Under
+   Program Files, settings can't be saved unless you pass `-DataDir`.
+3. Double-click `deploy\windows\install.cmd` and approve the admin prompt. It:
+   - adds a firewall rule allowing Node on Private and Domain networks, so other machines
+     can reach port 8080 and discovery replies get through;
+   - registers a scheduled task, **ProPresenter Receiver**, that starts the server hidden
+     at logon and restarts it if it exits;
+   - starts the server and prints the control-panel address.
+
+   Options (run from a command prompt):
+
+   ```bat
+   deploy\windows\install.cmd -Kiosk                         :: also open /display?bg=black full screen at logon
+   deploy\windows\install.cmd -Kiosk -Monitor 2              :: ...on the second display
+   deploy\windows\install.cmd -Kiosk -KioskPath "/display?bg=chroma" -Port 9090
+   deploy\windows\install.cmd -DataDir C:\ProgramData\ProPresenterReceiver
+   ```
+
+Run the installer again to change options; `deploy\windows\uninstall.cmd` removes the tasks
+and firewall rule (settings stay). To run the server by hand in a window, use
+`deploy\windows\start.cmd`. To open the output once, use `deploy\windows\kiosk.cmd`
+(`-Path`, `-Monitor` and `-Port` work as above). The kiosk uses Chrome when it's installed,
+otherwise Edge.
+
+The task runs as the logged-in user, so set Windows to sign in automatically on a
+dedicated output PC. The server log is `data\receiver.log`.
+
+For media from a Mac running ProPresenter, share its library and media folders, map them
+as drives, and add **Path map** entries such as `/Users/av/Movies => M:\`. When
+ProPresenter runs on the same Windows PC, `Documents\ProPresenter` is searched
+automatically. Add other media locations under **Media folders**. Path-map entries for
+Windows paths (`C:\Users\av\Videos => /mnt/pp/Media`) ignore case and accept either
+slash.
+
 ## Test content (`tools/seed`)
 
 `npm run seed` writes a test library into ProPresenter (macOS paths by default). The
@@ -194,6 +231,7 @@ public/
   display.*        the output (1920×1080 stage scaled to the window)
   control.*        the control panel
 deploy/            systemd unit, kiosk launcher, autostart entry
+  windows/         Windows installer (scheduled tasks + firewall), kiosk and start scripts
 tools/seed/        test-content generator for ProPresenter
 test/              node --test unit tests (npm test)
 ```
