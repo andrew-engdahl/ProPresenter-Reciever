@@ -59,6 +59,36 @@ body.bg-transparent #media:not(.on) { background: transparent; }
 
 #content { position: absolute; inset: 0; }
 
+/* Shared backdrops. Cards crossfade their text only; the translucent background
+   lives here, once, so two half-faded copies never stack up and darken the
+   frame mid-transition. */
+#scrim {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 400px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.78) 0%, rgb(0 0 0 / 0.55) 38%, rgb(0 0 0 / 0) 100%);
+  opacity: 0; transition: opacity 0.45s var(--ease-out);
+  pointer-events: none;
+}
+#plate {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: 20px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out), left 0.5s var(--ease-out), top 0.5s var(--ease-out), width 0.5s var(--ease-out), height 0.5s var(--ease-out);
+  pointer-events: none;
+}
+#plate::before { /* accent stripe (scripture, announcement, point) */
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--accent);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+#plate.striped::before { opacity: 1; }
+#scrim.on, #plate.on { opacity: 1; }
+#plate.snap { transition: opacity 0.4s var(--ease-out); }
+#scrim.late, #plate.late { transition-delay: 0.25s; }
+
 .card {
   position: absolute;
   opacity: 0;
@@ -96,19 +126,10 @@ body.bg-transparent #media:not(.on) { background: transparent; }
 }
 .uppercase .card.lyrics .text-fit { text-transform: uppercase; letter-spacing: 0.02em; }
 
-/* Style: scrim — a soft full-width gradient behind the text */
-.lyric-scrim .layout-lower-third .card.lyrics::before,
-.lyric-scrim .layout-lower-third .card.text::before,
-.lyric-scrim .layout-scripture-focus .card.lyrics::before,
-.lyric-scrim .layout-scripture-focus .card.text::before {
-  content: ''; position: absolute; inset: 0; z-index: -1;
-  background: linear-gradient(to top, rgb(0 0 0 / 0.78) 0%, rgb(0 0 0 / 0.55) 38%, rgb(0 0 0 / 0) 100%);
-}
-/* Style: panel — a rounded glass bar hugging the text */
+/* Style: scrim — the soft full-width gradient is #scrim (display.js turns it on) */
+/* Style: panel — #plate wraps the text; the padding here sets its size */
 .lyric-panel .card.lyrics .text-fit, .lyric-panel .card.text .text-fit {
-  background: var(--glass); border: 1px solid var(--glass-edge);
-  border-radius: 18px; padding: 22px 44px;
-  backdrop-filter: blur(14px);
+  padding: 22px 44px;
   text-shadow: none;
 }
 .next-line {
@@ -123,18 +144,8 @@ body.bg-transparent #media:not(.on) { background: transparent; }
   left: var(--gutter); right: var(--gutter); bottom: 72px;
   transform: translateX(-28px);
 }
-.panel {
-  position: relative;
-  background: var(--glass);
-  border: 1px solid var(--glass-edge);
-  border-radius: 20px;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
-  overflow: hidden;
-}
-.panel::before { /* accent stripe */
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--accent);
-}
+/* The panel's look (glass, border, accent stripe) is drawn by #plate behind it. */
+.panel { position: relative; }
 .card.scripture .panel { padding: 34px 48px 36px 56px; }
 .card.scripture .ref {
   display: inline-flex; align-items: center; gap: 12px;
@@ -186,8 +197,7 @@ body.bg-transparent #media:not(.on) { background: transparent; }
   padding: 120px 160px; text-align: center;
   transform: scale(0.985);
 }
-.layout-fullscreen .card .panel { background: none; border: 0; box-shadow: none; backdrop-filter: none; padding: 0; overflow: visible; }
-.layout-fullscreen .card .panel::before { display: none; }
+.layout-fullscreen .card .panel { padding: 0; }
 .layout-fullscreen .card.lyrics .text-fit, .layout-fullscreen .card.text .text-fit {
   font-size: calc(92px * var(--scale)); max-height: 760px; max-width: 1600px; line-height: 1.18;
 }

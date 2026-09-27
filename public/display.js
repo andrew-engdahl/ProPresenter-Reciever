@@ -14,6 +14,7 @@
   const q = new URLSearchParams(location.search);
   const $ = s => document.querySelector(s);
   const stage = $('#stage'), content = $('#content'), mediaEl = $('#media');
+  const scrim = $('#scrim'), plate = $('#plate');
   const video = $('#video'), image = $('#image'), speakerEl = $('#speaker'), messageEl = $('#message');
 
   let config = {}, state = {}, lastKey = null, currentCard = null;
@@ -126,6 +127,55 @@
     return `<div class="text-fit">${lineHtml(slide.lines)}</div>${next}`;
   }
 
+  // ---- backdrops ------------------------------------------------------------------
+  // The translucent scrim / glass plate is one shared element rather than part of
+  // each card, so crossfading two cards never stacks two half-transparent layers.
+  const PANEL_KINDS = ['scripture', 'announcement', 'point'];
+
+  function backdropFor(slide, mode) {
+    if (!slide || mode === 'fullscreen' || mode === 'clean') return null;
+    const lyricish = slide.kind === 'lyrics' || slide.kind === 'text';
+    const style = (config.theme && config.theme.lyricStyle) || 'scrim';
+    if (lyricish) return style === 'scrim' ? 'scrim' : style === 'panel' ? 'plate' : null;
+    return PANEL_KINDS.includes(slide.kind) ? 'plate' : null;
+  }
+
+  // Layout box of `el` in stage pixels, ignoring the card's entrance transform.
+  function stageBox(el) {
+    let x = 0, y = 0;
+    for (let e = el; e && e !== stage; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
+    return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+  }
+
+  function setBackdrop(kind, card, slide) {
+    const wasScrim = scrim.classList.contains('on'), wasPlate = plate.classList.contains('on');
+    // Switching between scrim and plate: let the old one fade before the new one
+    // appears, so they don't overlap either.
+    const late = (kind === 'scrim' && wasPlate) || (kind === 'plate' && wasScrim);
+    scrim.classList.toggle('late', kind === 'scrim' && wasPlate);
+    plate.classList.toggle('late', kind === 'plate' && wasScrim);
+    if (late && card) card.style.transitionDelay = '0.25s'; // text arrives with its backdrop
+    scrim.classList.toggle('on', kind === 'scrim');
+    if (kind !== 'plate') { plate.classList.remove('on'); return; }
+    const box = card.querySelector(PANEL_KINDS.includes(slide.kind) ? '.panel' : '.text-fit');
+    if (!box) return;
+    const b = stageBox(box);
+    // A big reshape (e.g. lyrics → scripture): hold the new text back a moment so
+    // the plate arrives first and the text never shows off the edge of it.
+    if (wasPlate) {
+      const o = plate.style, far = Math.max(Math.abs(parseFloat(o.left) - b.x), Math.abs(parseFloat(o.top) - b.y),
+        Math.abs(parseFloat(o.width) - b.w), Math.abs(parseFloat(o.height) - b.h));
+      if (far > 60) card.style.transitionDelay = '0.22s';
+    }
+    // Appearing from nothing: jump to the new shape, then fade. Otherwise morph.
+    plate.classList.toggle('snap', !wasPlate);
+    if (!wasPlate) void plate.offsetWidth;
+    Object.assign(plate.style, { left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`, height: `${b.h}px` });
+    plate.classList.toggle('striped', PANEL_KINDS.includes(slide.kind));
+    if (!wasPlate) void plate.offsetWidth;
+    plate.classList.add('on');
+  }
+
   // ---- content ------------------------------------------------------------------
   function render() {
     const mode = layoutMode();
@@ -152,9 +202,18 @@
         card.innerHTML = cardHtml(slide, mode);
         content.appendChild(card);
         // Measure once web fonts are in, or the fit is done against the fallback font.
-        document.fonts.ready.then(() => card.querySelectorAll('.text-fit').forEach(el => fitText(el, slide.kind === 'lyrics' || slide.kind === 'text')));
-        requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('in')));
+        const backdrop = backdropFor(slide, mode);
+        // Fade in only once the text is fitted and the backdrop placed, or a font that
+        // is still loading shows the card unfitted and off its plate.
+        document.fonts.ready.then(() => {
+          if (currentCard !== card) return;
+          card.querySelectorAll('.text-fit').forEach(el => fitText(el, slide.kind === 'lyrics' || slide.kind === 'text'));
+          setBackdrop(backdrop, card, slide);
+          requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('in')));
+        });
         currentCard = card;
+      } else {
+        setBackdrop(null);
       }
     }
 
