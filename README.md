@@ -79,9 +79,14 @@ Default Look → layout rules (first match wins; change them in the control pane
 | `/display?bg=green` / `?bg=blue` | Chroma key into a hardware switcher |
 | `/display?layout=fullscreen&bg=black` | Always full screen, whatever the Look |
 | `/display?layout=lower-third&media=0` | Stream graphics without media |
-| `?speaker=0`, `?messages=0`, `?debug=1` | Turn off speaker titles or messages, or show a status badge |
+| `?speaker=0`, `?messages=0`, `?debug=1`, `?hint=0` | Turn off speaker titles, messages or the full-screen hint, or show a status badge |
 
 You can run several outputs from one server at the same time.
+
+The output page hides the mouse cursor. To go full screen, **double-click anywhere** or press
+**F** (F or Esc to leave). Moving the mouse shows a short reminder at the top of the screen.
+The reminder never appears in the control-panel preview or in OBS, and `?hint=0` turns it off
+completely. The kiosk launcher (`deploy/kiosk.sh`) already opens full screen.
 
 ## Media (video and images)
 

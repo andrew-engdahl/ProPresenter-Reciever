@@ -5,6 +5,9 @@
 //   ?layout=lower-third|fullscreen|scripture-focus|clean   ignore the Look and force a layout
 //   ?media=0        never show media        ?speaker=0   never show speaker titles
 //   ?messages=0     never show messages     ?debug=1     connection badge
+//   ?hint=0         never show the full-screen hint
+//
+// Full screen: double-click anywhere, or press F (Esc leaves). The cursor is always hidden.
 (() => {
   'use strict';
   const q = new URLSearchParams(location.search);
@@ -22,6 +25,44 @@
   addEventListener('resize', fitStage);
   fitStage();
   if (q.get('debug')) document.body.classList.add('debug');
+
+  // ---- full screen ------------------------------------------------------------
+  // Browsers only allow full screen from a user gesture, so it's double-click or F.
+  const root = document.documentElement;
+  const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  function toggleFullscreen() {
+    if (isFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else {
+      const r = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+      if (r && r.catch) r.catch(() => {});
+    }
+  }
+  addEventListener('dblclick', toggleFullscreen);
+  addEventListener('keydown', e => {
+    if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+  });
+
+  // The hint only appears when someone moves the mouse, so it never lands on air
+  // in a kiosk, capture or browser-source output (and never inside the preview iframe).
+  const hint = document.querySelector('#fsHint');
+  const hintAllowed = q.get('hint') !== '0' && window.self === window.top && !window.obsstudio;
+  let hintTimer = null;
+  function showHint() {
+    if (!hintAllowed) return;
+    hint.textContent = isFull() ? 'Double-click or press F to exit full screen' : 'Double-click or press F for full screen';
+    hint.classList.add('on');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => hint.classList.remove('on'), 2200);
+  }
+  let lastMove = null;
+  addEventListener('mousemove', e => {
+    // Ignore the synthetic move some browsers fire on load / layout changes.
+    const pos = `${e.screenX},${e.screenY}`;
+    if (lastMove !== null && pos !== lastMove) showHint();
+    lastMove = pos;
+  });
+  document.addEventListener('fullscreenchange', () => hint.classList.remove('on'));
 
   // ---- theme ------------------------------------------------------------------
   function applyConfig(c) {
